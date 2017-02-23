@@ -431,6 +431,46 @@ error:
     return -1;
 }
 
+static int
+tb_displayline(PyObject *f, PyObject *filename, int lineno, PyObject *name)
+{
+    int err;
+    PyObject *line;
+
+    if (filename == NULL || name == NULL)
+        return -1;
+    line = PyUnicode_FromFormat("  File \"%U\", line %d, in %U\n",
+                                filename, lineno, name);
+    if (line == NULL)
+        return -1;
+    err = PyFile_WriteObject(line, f, Py_PRINT_RAW);
+    Py_DECREF(line);
+    if (err != 0)
+        return err;
+    /* ignore errors since we can't report them, can we? */
+    if (_Py_DisplaySourceLine(f, filename, lineno, 4))
+        PyErr_Clear();
+    return err;
+}
+
+
+static void
+print_frames(PyFrameObject *f)
+{
+    PyObject *f_stderr;
+    f_stderr = _PySys_GetObjectId(&PyId_stderr);
+
+
+    while (f != NULL){
+        tb_displayline(
+            f_stderr,
+            f->f_code->co_filename,
+            0,
+            f->f_code->co_name);
+        f = f->f_back;
+    }
+};
+
 static PyObject *
 warn_explicit(PyObject *category, PyObject *message,
               PyObject *filename, int lineno,
@@ -440,6 +480,7 @@ warn_explicit(PyObject *category, PyObject *message,
     PyObject *key = NULL, *text = NULL, *result = NULL, *lineno_obj = NULL;
     PyObject *item = NULL;
     PyObject *action;
+    PyFrameObject *f = PyThreadState_GET()->frame;
     int rc;
 
     /* module can be None if a warning is emitted late during Python shutdown.
@@ -536,6 +577,9 @@ warn_explicit(PyObject *category, PyObject *message,
             if (registry != NULL && registry != Py_None)
                 rc = update_registry(registry, text, category, 0);
         }
+        else if (_PyUnicode_EqualToASCIIString(action, "stack")) {
+            print_frames(f);
+        }
         else if (!_PyUnicode_EqualToASCIIString(action, "default")) {
             PyErr_Format(PyExc_RuntimeError,
                         "Unrecognized action (%R) in warnings.filters:\n %R",
@@ -625,6 +669,7 @@ next_external_frame(PyFrameObject *frame)
 
     return frame;
 }
+
 
 /* filename, module, and registry are new refs, globals is borrowed */
 /* Returns 0 on error (no new refs), 1 on success */
