@@ -567,6 +567,7 @@ struct compiling {
     PyObject *c_filename; /* filename */
     PyObject *c_normalize; /* Normalization function from unicodedata. */
     int c_feature_version; /* Latest minor version of Python for allowed features */
+    int c_should_normalize;
 };
 
 static asdl_seq *seq_for_testlist(struct compiling *, const node *);
@@ -616,7 +617,7 @@ new_identifier(const char *n, struct compiling *c)
     assert(PyUnicode_IS_READY(id));
     /* Check whether there are non-ASCII characters in the
        identifier; if so, normalize to NFKC. */
-    if (!PyUnicode_IS_ASCII(id)) {
+    if (!PyUnicode_IS_ASCII(id) && c->c_should_normalize) {
         PyObject *id2;
         _Py_IDENTIFIER(NFKC);
         if (!c->c_normalize && !init_normalization(c)) {
@@ -786,6 +787,7 @@ PyAST_FromNodeObject(const node *n, PyCompilerFlags *flags,
     /* borrowed reference */
     c.c_filename = filename;
     c.c_normalize = NULL;
+    c.c_should_normalize = !((flags->cf_flags & PyCF_NO_UNICODE_NORMALIZE) == PyCF_NO_UNICODE_NORMALIZE);
     c.c_feature_version = flags->cf_feature_version;
 
     if (TYPE(n) == encoding_decl)

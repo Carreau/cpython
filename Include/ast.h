@@ -29,6 +29,10 @@ PyAPI_FUNC(PyObject *) _PyAST_ExprAsUnicode(expr_ty);
    Doesn't set exception. */
 PyAPI_FUNC(PyObject *) _PyAST_GetDocString(asdl_seq *);
 
+static PyObject *
+unicodedata_no_normalize(PyObject *self, PyObject *form,
+                               PyObject *input);
+
 #endif /* !Py_LIMITED_API */
 
 #ifdef __cplusplus
