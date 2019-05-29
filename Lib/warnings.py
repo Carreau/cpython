@@ -7,14 +7,15 @@ __all__ = ["warn", "warn_explicit", "showwarning",
            "formatwarning", "filterwarnings", "simplefilter",
            "resetwarnings", "catch_warnings"]
 
-def showwarning(message, category, filename, lineno, file=None, line=None):
+def showwarning(message, category, filename, lineno, file=None, line=None, frame=None):
     """Hook to write a warning to a file; replace if you like."""
-    msg = WarningMessage(message, category, filename, lineno, file, line)
+    print('here !')
+    msg = WarningMessage("This is", "cat1", filename, lineno, file, line, frame)
     _showwarnmsg_impl(msg)
 
-def formatwarning(message, category, filename, lineno, line=None):
+def formatwarning(message, category, filename, lineno, line=None, frame=None):
     """Function to format a warning the standard way."""
-    msg = WarningMessage(message, category, filename, lineno, None, line)
+    msg = WarningMessage(message, "cat2", filename, lineno, None, line, frame)
     return _formatwarnmsg_impl(msg)
 
 def _showwarnmsg_impl(msg):
@@ -36,20 +37,29 @@ def _formatwarnmsg_impl(msg):
     category = msg.category.__name__
     s =  f"{msg.filename}:{msg.lineno}: {category}: {msg.message}\n"
 
-    if msg.line is None:
-        try:
-            import linecache
-            line = linecache.getline(msg.filename, msg.lineno)
-        except Exception:
-            # When a warning is logged during Python shutdown, linecache
-            # and the import machinery don't work anymore
-            line = None
-            linecache = None
+    from io import StringIO
+    from traceback import print_stack
+    buf = StringIO()
+    if msg.frame:
+        print_stack(msg.frame, file=buf)
+        buf.seek(0)
+        s+= buf.read()
     else:
-        line = msg.line
-    if line:
-        line = line.strip()
-        s += "  %s\n" % line
+        if msg.line is None:
+            try:
+                import linecache
+                line = linecache.getline(msg.filename, msg.lineno)
+            except Exception:
+                # When a warning is logged during Python shutdown, linecache
+                # and the import machinery don't work anymore
+                line = None
+                linecache = None
+        else:
+            line = msg.line
+        if line:
+            line = line.strip()
+            s += "  %s\n" % line
+
 
     if msg.source is not None:
         try:
@@ -106,8 +116,8 @@ def _showwarnmsg(msg):
                 raise TypeError("warnings.showwarning() must be set to a "
                                 "function or method")
 
-            sw(msg.message, msg.category, msg.filename, msg.lineno,
-               msg.file, msg.line)
+            sw(msg.message, "cat3", msg.filename, msg.lineno,
+               msg.file, msg.line, msg.frame)
             return
     _showwarnmsg_impl(msg)
 
@@ -123,7 +133,7 @@ def _formatwarnmsg(msg):
     else:
         if fw is not _formatwarning_orig:
             # warnings.formatwarning() was replaced
-            return fw(msg.message, msg.category,
+            return fw(msg.message, "cat4",
                       msg.filename, msg.lineno, msg.line)
     return _formatwarnmsg_impl(msg)
 
@@ -370,13 +380,12 @@ def warn_explicit(message, category, filename, lineno,
     import linecache
     linecache.getlines(filename, module_globals)
 
+    import sys
+    frame = None
     if action == "error":
         raise message
     if action == "stack":
-        import traceback
-        import sys
-        f = sys._getframe().f_back.f_back
-        traceback.print_stack(f=f)
+        frame = sys._getframe().f_back.f_back
     # Other actions
     elif action == "once":
         registry[key] = 1
@@ -400,7 +409,7 @@ def warn_explicit(message, category, filename, lineno,
               "Unrecognized action (%r) in warnings.filters:\n %s" %
               (action, item))
     # Print message and context
-    msg = WarningMessage(message, category, filename, lineno, source)
+    msg = WarningMessage(message, category, filename, lineno, source, frame)
     _showwarnmsg(msg)
 
 
@@ -410,20 +419,21 @@ class WarningMessage(object):
                         "line", "source")
 
     def __init__(self, message, category, filename, lineno, file=None,
-                 line=None, source=None):
+                 line=None, source=None, frame=None):
         self.message = message
         self.category = category
         self.filename = filename
         self.lineno = lineno
         self.file = file
         self.line = line
+        self.frame = frame
         self.source = source
         self._category_name = category.__name__ if category else None
 
     def __str__(self):
         return ("{message : %r, category : %r, filename : %r, lineno : %s, "
-                    "line : %r}" % (self.message, self._category_name,
-                                    self.filename, self.lineno, self.line))
+                "line : %r frame: %s\n}" % (self.message, self._category_name,
+                                    self.filename, self.lineno, self.line, self.frame))
 
 
 class catch_warnings(object):

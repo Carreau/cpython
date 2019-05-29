@@ -552,7 +552,7 @@ error:
 static int
 call_show_warning(PyObject *category, PyObject *text, PyObject *message,
                   PyObject *filename, int lineno, PyObject *lineno_obj,
-                  PyObject *sourceline, PyObject *source)
+                  PyObject *sourceline, PyObject *source, PyFrameObject *frame)
 {
     PyObject *show_fn, *msg, *res, *warnmsg_cls = NULL;
     _Py_IDENTIFIER(_showwarnmsg);
@@ -565,6 +565,7 @@ call_show_warning(PyObject *category, PyObject *text, PyObject *message,
     if (show_fn == NULL) {
         if (PyErr_Occurred())
             return -1;
+        fprintf(stderr, "AAAA;\n");
         show_warning(filename, lineno, text, category, sourceline);
         return 0;
     }
@@ -583,9 +584,9 @@ call_show_warning(PyObject *category, PyObject *text, PyObject *message,
         }
         goto error;
     }
-
+    
     msg = PyObject_CallFunctionObjArgs(warnmsg_cls, message, category,
-            filename, lineno_obj, Py_None, Py_None, source,
+            filename, lineno_obj, Py_None, Py_None, Py_None, frame,
             NULL);
     Py_DECREF(warnmsg_cls);
     if (msg == NULL)
@@ -594,6 +595,7 @@ call_show_warning(PyObject *category, PyObject *text, PyObject *message,
     res = PyObject_CallFunctionObjArgs(show_fn, msg, NULL);
     Py_DECREF(show_fn);
     Py_DECREF(msg);
+    return 0;
 
     if (res == NULL)
         return -1;
@@ -606,46 +608,6 @@ error:
     return -1;
 }
 
-static int
-tb_displayline(PyObject *f, PyObject *filename, int lineno, PyObject *name)
-{
-    int err;
-    PyObject *line;
-
-    if (filename == NULL || name == NULL)
-        return -1;
-    line = PyUnicode_FromFormat("  File \"%S\", line %d, in %U\n",
-                                filename, lineno, name);
-    if (line == NULL)
-        return -1;
-    err = PyFile_WriteObject(line, f, Py_PRINT_RAW);
-    Py_DECREF(line);
-    if (err != 0)
-        return err;
-    if (_Py_DisplaySourceLine(f, filename, lineno, 4))
-        PyErr_Clear();
-    return err;
-}
-
-
-static void
-print_stack()
-{
-    PyObject *f_stderr;
-    f_stderr = _PySys_GetObjectId(&PyId_stderr);
-    PyFrameObject *frame = _PyThreadState_GET()->frame;
-
-    while (frame != NULL){
-        int lineno = PyFrame_GetLineNumber(frame);
-        tb_displayline(
-            f_stderr,
-            frame->f_code->co_filename,
-            lineno,
-            frame->f_code->co_name);
-        frame = frame->f_back;
-    }
-};
-
 static PyObject *
 warn_explicit(PyObject *category, PyObject *message,
               PyObject *filename, int lineno,
@@ -655,6 +617,7 @@ warn_explicit(PyObject *category, PyObject *message,
     PyObject *key = NULL, *text = NULL, *result = NULL, *lineno_obj = NULL;
     PyObject *item = NULL;
     PyObject *action;
+    PyFrameObject *frame = NULL;
     int rc;
 
     /* module can be None if a warning is emitted late during Python shutdown.
@@ -761,7 +724,7 @@ warn_explicit(PyObject *category, PyObject *message,
                 rc = update_registry(registry, text, category, 0);
         }
         else if (_PyUnicode_EqualToASCIIString(action, "stack")) {
-            print_stack();
+            frame = _PyThreadState_GET()->frame;
         }
         else if (!_PyUnicode_EqualToASCIIString(action, "default")) {
             PyErr_Format(PyExc_RuntimeError,
@@ -775,7 +738,7 @@ warn_explicit(PyObject *category, PyObject *message,
         goto return_none;
     if (rc == 0) {
         if (call_show_warning(category, text, message, filename, lineno,
-                              lineno_obj, sourceline, source) < 0)
+                              lineno_obj, sourceline, source, frame) < 0)
             goto cleanup;
     }
     else /* if (rc == -1) */
