@@ -647,7 +647,7 @@ class BaseDefaultEventLoopPolicy(AbstractEventLoopPolicy):
 
     def set_event_loop(self, loop):
         """Set the event loop."""
-        self._local._set_called = True
+        self._local._set_called = (loop is not None)
         assert loop is None or isinstance(loop, AbstractEventLoop)
         self._local._loop = loop
 

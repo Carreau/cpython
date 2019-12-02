@@ -80,6 +80,11 @@ class RunTests(BaseTest):
                                            'a coroutine was expected'):
                 asyncio.run(o)
 
+    def test_asyncio_get_loop_run_interleave(self):
+        asyncio.get_event_loop()
+        asyncio.run(asyncio.sleep(0))
+        asyncio.get_event_loop()
+
     def test_asyncio_run_debug(self):
         async def main(expected):
             loop = asyncio.get_event_loop()
