@@ -1,0 +1,3 @@
+Allow to set the header timestamp when creating a gzip'ed tarfile with
+``tarfile.open()``. This can be used to make sure the generation of a
+compressed archived is bytes for bytes reproducible.

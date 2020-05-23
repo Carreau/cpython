@@ -37,7 +37,7 @@ Some facts and figures:
    Added support for :mod:`lzma` compression.
 
 
-.. function:: open(name=None, mode='r', fileobj=None, bufsize=10240, \*\*kwargs)
+.. function:: open(name=None, mode='r', fileobj=None, bufsize=10240, \*, timestamp=None, \*\*kwargs)
 
    Return a :class:`TarFile` object for the pathname *name*. For detailed
    information on :class:`TarFile` objects and the keyword arguments that are
@@ -142,6 +142,10 @@ Some facts and figures:
    | ``'w|xz'``  | Open an lzma compressed *stream* for       |
    |             | writing.                                   |
    +-------------+--------------------------------------------+
+
+   When creating a tar archive, if compression is set to ``gz`` and
+   *timestamp* is not ``None``, then **timestamp** is used for the time in the
+   *compressed file header.
 
    .. versionchanged:: 3.5
       The ``'x'`` (exclusive creation) mode was added.

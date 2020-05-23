@@ -335,7 +335,7 @@ class _Stream:
        _Stream is intended to be used only internally.
     """
 
-    def __init__(self, name, mode, comptype, fileobj, bufsize):
+    def __init__(self, name, mode, comptype, fileobj, bufsize, *, timestamp=None):
         """Construct a _Stream object.
         """
         self._extfileobj = True
@@ -370,7 +370,7 @@ class _Stream:
                     self._init_read_gz()
                     self.exception = zlib.error
                 else:
-                    self._init_write_gz()
+                    self._init_write_gz(timestamp=timestamp)
 
             elif comptype == "bz2":
                 try:
@@ -409,14 +409,17 @@ class _Stream:
         if hasattr(self, "closed") and not self.closed:
             self.close()
 
-    def _init_write_gz(self):
+    def _init_write_gz(self, timestamp=None):
         """Initialize for writing with gzip compression.
         """
         self.cmp = self.zlib.compressobj(9, self.zlib.DEFLATED,
                                             -self.zlib.MAX_WBITS,
                                             self.zlib.DEF_MEM_LEVEL,
                                             0)
-        timestamp = struct.pack("<L", int(time.time()))
+        if timestamp is None:
+            timestamp = struct.pack("<L", int(time.time()))
+        else:
+            timestamp = struct.pack("<L", timestamp)
         self.__write(b"\037\213\010\010" + timestamp + b"\002\377")
         if self.name.endswith(".gz"):
             self.name = self.name[:-3]
@@ -1556,7 +1559,7 @@ class TarFile(object):
     # by adding it to the mapping in OPEN_METH.
 
     @classmethod
-    def open(cls, name=None, mode="r", fileobj=None, bufsize=RECORDSIZE, **kwargs):
+    def open(cls, name=None, mode="r", fileobj=None, bufsize=RECORDSIZE, *, timestamp=None, **kwargs):
         """Open a tar archive for reading, writing or appending. Return
            an appropriate TarFile class.
 
@@ -1631,8 +1634,7 @@ class TarFile(object):
 
             if filemode not in ("r", "w"):
                 raise ValueError("mode must be 'r' or 'w'")
-
-            stream = _Stream(name, filemode, comptype, fileobj, bufsize)
+            stream = _Stream(name, filemode, comptype, fileobj, bufsize, timestamp=timestamp)
             try:
                 t = cls(name, filemode, stream, **kwargs)
             except:
@@ -1655,7 +1657,7 @@ class TarFile(object):
         return cls(name, mode, fileobj, **kwargs)
 
     @classmethod
-    def gzopen(cls, name, mode="r", fileobj=None, compresslevel=9, **kwargs):
+    def gzopen(cls, name, mode="r", fileobj=None, compresslevel=9, *, timestamp=None, **kwargs):
         """Open gzip compressed tar archive name for reading or writing.
            Appending is not allowed.
         """
@@ -1668,7 +1670,7 @@ class TarFile(object):
             raise CompressionError("gzip module is not available")
 
         try:
-            fileobj = GzipFile(name, mode + "b", compresslevel, fileobj)
+            fileobj = GzipFile(name, mode + "b", compresslevel, fileobj, mtime=timestamp))
         except OSError:
             if fileobj is not None and mode == 'r':
                 raise ReadError("not a gzip file")
