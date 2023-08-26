@@ -41,9 +41,11 @@ def skip_segfault_on_android(test):
 
 @contextmanager
 def temporary_filename():
-    filename = tempfile.mktemp()
+    file = tempfile.NamedTemporaryFile(delete=False)
+    file.close()
+
     try:
-        yield filename
+        yield file.name
     finally:
         os_helper.unlink(filename)
 
