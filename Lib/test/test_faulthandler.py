@@ -49,11 +49,8 @@ def skip_segfault_on_android(test):
 
 @contextmanager
 def temporary_filename():
-    filename = tempfile.mktemp()
-    try:
-        yield filename
-    finally:
-        os_helper.unlink(filename)
+    with tempfile.NamedTemporaryFile() as file:
+        yield file.name
 
 
 ADDRESS_EXPR = "0x[0-9a-f]+"
