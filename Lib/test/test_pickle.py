@@ -711,8 +711,9 @@ class CompatPickleTests(unittest.TestCase):
 
 class CommandLineTest(unittest.TestCase):
     def setUp(self):
-        self.filename = tempfile.mktemp()
-        self.addCleanup(os_helper.unlink, self.filename)
+        self._tempfile = tempfile.NamedTemporaryFile()
+        self.filename = self._tempfile.name
+        self.addCleanup(self._tempfile.__exit__, None, None, None)
 
     @staticmethod
     def text_normalize(string):
