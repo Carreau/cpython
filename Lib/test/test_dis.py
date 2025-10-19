@@ -2492,8 +2492,11 @@ def _unroll_caches_as_Instructions(instrs, show_caches=False):
 class TestDisCLI(unittest.TestCase):
 
     def setUp(self):
-        self.filename = tempfile.mktemp()
-        self.addCleanup(os_helper.unlink, self.filename)
+        self._file_context = tempfile.NamedTemporaryFile()
+        self.filename = self._file_context.__enter__().name
+
+    def tearDown(self):
+        self._file_context.__exit__(None, None, None)
 
     @staticmethod
     def text_normalize(string):
