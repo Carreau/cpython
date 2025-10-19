@@ -9,7 +9,6 @@ import traceback
 import unittest
 from contextlib import *  # Tests __all__
 from test import support
-from test.support import os_helper
 from test.support.testcase import ExceptionIsLikeMixin
 import weakref
 
@@ -442,8 +441,8 @@ class NullcontextTestCase(unittest.TestCase):
 class FileContextTestCase(unittest.TestCase):
 
     def testWithOpen(self):
-        tfn = tempfile.mktemp()
-        try:
+        with tempfile.NamedTemporaryFile() as file:
+            tfn = file.name
             with open(tfn, "w", encoding="utf-8") as f:
                 self.assertFalse(f.closed)
                 f.write("Booh\n")
@@ -454,8 +453,6 @@ class FileContextTestCase(unittest.TestCase):
                     self.assertEqual(f.read(), "Booh\n")
                     1 / 0
             self.assertTrue(f.closed)
-        finally:
-            os_helper.unlink(tfn)
 
 class LockContextTestCase(unittest.TestCase):
 
