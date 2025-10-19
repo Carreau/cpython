@@ -442,8 +442,8 @@ class NullcontextTestCase(unittest.TestCase):
 class FileContextTestCase(unittest.TestCase):
 
     def testWithOpen(self):
-        tfn = tempfile.mktemp()
-        try:
+        with tempfile.NamedTemporaryFile() as file:
+            tfn = file.name
             with open(tfn, "w", encoding="utf-8") as f:
                 self.assertFalse(f.closed)
                 f.write("Booh\n")
@@ -454,8 +454,6 @@ class FileContextTestCase(unittest.TestCase):
                     self.assertEqual(f.read(), "Booh\n")
                     1 / 0
             self.assertTrue(f.closed)
-        finally:
-            os_helper.unlink(tfn)
 
 class LockContextTestCase(unittest.TestCase):
 
