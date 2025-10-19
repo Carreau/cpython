@@ -15,7 +15,7 @@ import types
 import unittest
 from test.support import (captured_stdout, requires_debug_ranges,
                           requires_specialization, cpython_only,
-                          os_helper, import_helper, reset_code)
+                          import_helper, reset_code)
 from test.support.bytecode_helper import BytecodeTestCase
 
 
@@ -2492,8 +2492,12 @@ def _unroll_caches_as_Instructions(instrs, show_caches=False):
 class TestDisCLI(unittest.TestCase):
 
     def setUp(self):
-        self.filename = tempfile.mktemp()
-        self.addCleanup(os_helper.unlink, self.filename)
+        self._file_context = tempfile.NamedTemporaryFile(delete_on_close=False)
+        self.addCleanup(self._file_context.__exit__, None, None, None)
+        self.filename = self._file_context.__enter__().name
+        assert isinstance(self.filename, str)
+        # needs to be closed on windows
+        self._file_context.close()
 
     @staticmethod
     def text_normalize(string):
