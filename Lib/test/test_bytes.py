@@ -1341,8 +1341,8 @@ class ByteArrayTest(BaseBytesTest, unittest.TestCase):
     def test_bytearray_api(self):
         short_sample = b"Hello world\n"
         sample = short_sample + b"\0"*(20 - len(short_sample))
-        tfn = tempfile.mktemp()
-        try:
+        with tempfile.NamedTemporaryFile() as file:
+            tfn = file.name
             # Prepare
             with open(tfn, "wb") as f:
                 f.write(short_sample)
@@ -1358,11 +1358,6 @@ class ByteArrayTest(BaseBytesTest, unittest.TestCase):
             with open(tfn, "rb") as f:
                 self.assertEqual(f.read(), sample)
             # Text mode is ambiguous; don't test
-        finally:
-            try:
-                os.remove(tfn)
-            except OSError:
-                pass
 
     def test_reverse(self):
         b = bytearray(b'hello')
