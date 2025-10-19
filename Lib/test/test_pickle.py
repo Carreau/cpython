@@ -15,7 +15,7 @@ from textwrap import dedent
 import doctest
 import unittest
 from test import support
-from test.support import cpython_only, import_helper, os_helper
+from test.support import cpython_only, import_helper
 from test.support.import_helper import ensure_lazy_imports
 
 from test.pickletester import AbstractHookTests
@@ -711,8 +711,9 @@ class CompatPickleTests(unittest.TestCase):
 
 class CommandLineTest(unittest.TestCase):
     def setUp(self):
-        self.filename = tempfile.mktemp()
-        self.addCleanup(os_helper.unlink, self.filename)
+        self._tempfile = tempfile.NamedTemporaryFile()
+        self.filename = self._tempfile.name
+        self.addCleanup(self._tempfile.__exit__, None, None, None)
 
     @staticmethod
     def text_normalize(string):
