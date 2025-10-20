@@ -3158,13 +3158,12 @@ newline \n or os.linesep for the platform the test is run on.
 Windows line endings first:
 
     >>> import tempfile, os
-    >>> fn = tempfile.mktemp()
-    >>> with open(fn, 'wb') as f:
+    >>> with tempfile.NamedTemporaryFile('wb', delete_on_close=False) as f:
     ...    f.write(b'Test:\r\n\r\n  >>> x = 1 + 1\r\n\r\nDone.\r\n')
+    ...    f.close()
+    ...    doctest.testfile(f.name, module_relative=False, verbose=False)
     35
-    >>> doctest.testfile(fn, module_relative=False, verbose=False)
     TestResults(failed=0, attempted=1)
-    >>> os.remove(fn)
 
 And now *nix line endings:
 
