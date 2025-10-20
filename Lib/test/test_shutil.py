@@ -314,13 +314,17 @@ class TestRmTree(BaseTest, unittest.TestCase):
         self.assertTrue(os.path.exists(dir3))
         self.assertTrue(os.path.exists(file1))
 
-    def test_rmtree_errors(self):
-        # filename is guaranteed not to exist
-        filename = tempfile.mktemp(dir=self.mkdtemp())
-        self.assertRaises(FileNotFoundError, shutil.rmtree, filename)
-        # test that ignore_errors option is honored
-        shutil.rmtree(filename, ignore_errors=True)
+    def test_rmtree_errors_file_doesnt_exists(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            with tempfile.NamedTemporaryFile(dir=tempdir) as file:
+                filename = file.name
+                # filename is guaranteed not to exist after the context manager
+            self.assertRaises(FileNotFoundError, shutil.rmtree, filename)
+            # test that ignore_errors option is honored
+            shutil.rmtree(filename, ignore_errors=True)
 
+
+    def test_rmtree_errors_file_exists(self):
         # existing file
         tmpdir = self.mkdtemp()
         filename = os.path.join(tmpdir, "tstfile")
@@ -980,14 +984,16 @@ class TestCopyTree(BaseTest, unittest.TestCase):
             self.assertIsInstance(a, str)
             self.assertIsInstance(b, str)
             self.assertEqual(a, os.path.join(src, 'foo'))
-            self.assertEqual(b, os.path.join(dst, 'foo'))
+            self.assertEqual(b, os.path.join(dst.name, 'foo'))
 
         flag = []
         src = self.mkdtemp()
-        dst = tempfile.mktemp(dir=self.mkdtemp())
-        create_file(os.path.join(src, 'foo'))
-        shutil.copytree(src, dst, copy_function=custom_cpfun)
-        self.assertEqual(len(flag), 1)
+        with tempfile.TemporaryDirectory() as tempdir:
+            with tempfile.NamedTemporaryFile(dir=tempdir, delete_on_close=False) as dst:
+                dst.close()
+            create_file(os.path.join(src, 'foo'))
+            shutil.copytree(src, dst.name, copy_function=custom_cpfun)
+            self.assertEqual(len(flag), 1)
 
     # Issue #3002: copyfile and copytree block indefinitely on named pipes
     @unittest.skipUnless(hasattr(os, "mkfifo"), 'requires os.mkfifo()')
