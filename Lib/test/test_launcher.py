@@ -270,15 +270,14 @@ class RunPyMixin:
 
     @contextlib.contextmanager
     def script(self, content, encoding="utf-8"):
-        file = Path(tempfile.mktemp(dir=os.getcwd()) + ".py")
-        if isinstance(content, bytes):
-            file.write_bytes(content)
-        else:
-            file.write_text(content, encoding=encoding)
-        try:
+        with tempfile.NamedTemporaryFile(dir=os.getcwd(), suffix='.py', delete_on_close=False) as tmp:
+            tmp.close()
+            file = Path(tmp.name)
+            if isinstance(content, bytes):
+                file.write_bytes(content)
+            else:
+                file.write_text(content, encoding=encoding)
             yield file
-        finally:
-            file.unlink()
 
     @contextlib.contextmanager
     def fake_venv(self):
