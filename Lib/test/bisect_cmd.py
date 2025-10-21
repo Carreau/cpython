@@ -73,12 +73,14 @@ def list_cases(args):
 
 
 def run_tests(args, tests, huntrleaks=None):
-    tmp = tempfile.mktemp()
-    try:
-        write_tests(tmp, tests)
+    with tempfile.NamedTemporaryFile('w', delete_on_close=False) as tmp:
+        # close for windows
+        tmp.close()
+
+        write_tests(tmp.name, tests)
 
         cmd = python_cmd()
-        cmd.extend(['-u', '-m', 'test', '--matchfile', tmp])
+        cmd.extend(['-u', '-m', 'test', '--matchfile', tmp.name])
         cmd.extend(args.test_args)
         print("+ %s" % format_shell_args(cmd))
 
@@ -87,9 +89,6 @@ def run_tests(args, tests, huntrleaks=None):
 
         proc = subprocess.run(cmd)
         return proc.returncode
-    finally:
-        if os.path.exists(tmp):
-            os.unlink(tmp)
 
 
 def parse_args():
