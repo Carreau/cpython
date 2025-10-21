@@ -23,7 +23,6 @@ except ImportError:
     _testinternalcapi = None
 
 from test import support
-from test.support import os_helper
 from test.support import skip_emscripten_stack_overflow, skip_wasi_stack_overflow
 from test.support.ast_helper import ASTTestMixin
 from test.support.import_helper import ensure_lazy_imports
@@ -3406,8 +3405,11 @@ class ModuleStateTests(unittest.TestCase):
 
 class CommandLineTests(unittest.TestCase):
     def setUp(self):
-        self.filename = tempfile.mktemp()
-        self.addCleanup(os_helper.unlink, self.filename)
+        self._file_context = tempfile.NamedTemporaryFile(delete_on_close=False)
+        self.addCleanup(self._file_context.__exit__, None, None, None)
+        # needs to be closed on windows
+        self.filename = self._file_context.__enter__().name
+        self._file_context.close()
 
     @staticmethod
     def text_normalize(string):
