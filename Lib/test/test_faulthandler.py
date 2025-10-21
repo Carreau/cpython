@@ -7,7 +7,7 @@ import signal
 import subprocess
 import sys
 from test import support
-from test.support import os_helper, script_helper, is_android, MS_WINDOWS, threading_helper
+from test.support import script_helper, is_android, MS_WINDOWS, threading_helper
 import tempfile
 import unittest
 from textwrap import dedent
