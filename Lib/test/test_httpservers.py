@@ -1348,10 +1348,12 @@ class CommandLineTestCase(unittest.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.tls_password_file = tempfile.mktemp()
-        with open(self.tls_password_file, 'wb') as f:
-            f.write(self.tls_password.encode())
-        self.addCleanup(os_helper.unlink, self.tls_password_file)
+        self._tls_password_file = tempfile.NamedTemporaryFile('wb', delete_on_close=False)
+        self._tls_password_file.write(self.tls_password.encode())
+
+        self.tls_password_file = self._tls_password_file.__enter__().name
+        self._tls_password_file.close()
+        self.addCleanup(self._tls_password_file.__exit__, None, None, None)
 
     def invoke_httpd(self, *args, stdout=None, stderr=None):
         stdout = StringIO() if stdout is None else stdout
