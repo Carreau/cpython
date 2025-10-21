@@ -3327,8 +3327,11 @@ class CTokenizerBufferTests(unittest.TestCase):
 
 class CommandLineTest(unittest.TestCase):
     def setUp(self):
-        self.filename = tempfile.mktemp()
-        self.addCleanup(os_helper.unlink, self.filename)
+        self._file_context = tempfile.NamedTemporaryFile(delete_on_close=False)
+        self.addCleanup(self._file_context.__exit__, None, None, None)
+        self.filename = self._file_context.__enter__().name
+        # needs to be closed on windows
+        self._file_context.close()
 
     @staticmethod
     def text_normalize(string):
